@@ -2,10 +2,15 @@
 
 import TestResults from "./TestResults";
 
-export default function FeedbackPanel({ submission }) {
+export default function FeedbackPanel({ submission, onRetry }) {
   if (!submission) return null;
   const { score, test_results, ai_feedback } = submission;
   const feedback = ai_feedback || {};
+  const passed = test_results?.passed_tests ?? 0;
+  const total = test_results?.total_tests ?? 0;
+  const hasError = test_results?.error;
+  const testsFailed = hasError || (total > 0 && passed < total);
+  const showRetry = testsFailed && typeof onRetry === "function";
 
   return (
     <div className="space-y-4 rounded-lg border border-zinc-200 dark:border-zinc-800 p-4 bg-white dark:bg-zinc-900">
@@ -77,6 +82,17 @@ export default function FeedbackPanel({ submission }) {
               </ul>
             </div>
           )}
+        </div>
+      )}
+      {showRetry && (
+        <div className="pt-2 border-t border-zinc-200 dark:border-zinc-800">
+          <button
+            type="button"
+            onClick={onRetry}
+            className="rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 px-4 py-2 font-medium hover:bg-zinc-800 dark:hover:bg-zinc-200"
+          >
+            Retry
+          </button>
         </div>
       )}
     </div>
