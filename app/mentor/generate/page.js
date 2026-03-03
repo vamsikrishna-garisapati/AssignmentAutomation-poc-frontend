@@ -32,25 +32,39 @@ export default function MentorGeneratePage() {
   const [selectedTopicIds, setSelectedTopicIds] = useState([]);
   const [assignmentType, setAssignmentType] = useState("python");
   const [difficulty, setDifficulty] = useState("easy");
+  const [subTopic, setSubTopic] = useState("");
+  const [additionalInformation, setAdditionalInformation] = useState("");
   const [generated, setGenerated] = useState(null);
   const [createdId, setCreatedId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // When assignment type changes, clear topic selection (topics list is per-type).
   useEffect(() => {
-    getTopics()
+    setSelectedTopicIds([]);
+  }, [assignmentType]);
+
+  // Load topics for the selected assignment type when on step 2 (type-first flow).
+  useEffect(() => {
+    if (step !== 2) return;
+    getTopics(assignmentType)
       .then(setTopics)
       .catch((e) => setError(e.message));
-  }, []);
+  }, [step, assignmentType]);
 
   const handleGenerate = () => {
     setError(null);
     setLoading(true);
-    generateAssignment({
+    const body = {
       topic_ids: selectedTopicIds,
       difficulty,
       assignment_type: assignmentType,
-    })
+    };
+    const st = subTopic.trim();
+    const ai = additionalInformation.trim();
+    if (st) body.sub_topic = st;
+    if (ai) body.additional_information = ai;
+    generateAssignment(body)
       .then((data) => {
         setGenerated(data);
         setStep(4);
@@ -91,27 +105,13 @@ export default function MentorGeneratePage() {
 
       {step === 1 && (
         <div className="space-y-4">
-          <TopicSelector
-            topics={topics}
-            selectedIds={selectedTopicIds}
-            onChange={setSelectedTopicIds}
-          />
-          <button
-            type="button"
-            onClick={() => setStep(2)}
-            className="rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 px-4 py-2 font-medium hover:bg-zinc-800 dark:hover:bg-zinc-200"
-          >
-            Next
-          </button>
-        </div>
-      )}
-
-      {step === 2 && (
-        <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
               Assignment type
             </label>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-2">
+              Choose the kind of assignment. Next you will see only topics for this type.
+            </p>
             <div className="flex flex-wrap gap-2">
               {ASSIGNMENT_TYPES.map(({ value, label }) => (
                 <button
@@ -128,6 +128,55 @@ export default function MentorGeneratePage() {
                 </button>
               ))}
             </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setStep(2)}
+            className="rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 px-4 py-2 font-medium hover:bg-zinc-800 dark:hover:bg-zinc-200"
+          >
+            Next
+          </button>
+        </div>
+      )}
+
+      {step === 2 && (
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+              Topics
+            </label>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-2">
+              Topics for {ASSIGNMENT_TYPES.find((t) => t.value === assignmentType)?.label ?? assignmentType}.
+            </p>
+            <TopicSelector
+              topics={topics}
+              selectedIds={selectedTopicIds}
+              onChange={setSelectedTopicIds}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+              Sub topic (optional)
+            </label>
+            <input
+              type="text"
+              value={subTopic}
+              onChange={(e) => setSubTopic(e.target.value)}
+              placeholder="e.g. loops and conditionals"
+              className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-zinc-900 dark:text-zinc-100 placeholder-zinc-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+              Additional information (optional)
+            </label>
+            <textarea
+              value={additionalInformation}
+              onChange={(e) => setAdditionalInformation(e.target.value)}
+              placeholder="e.g. Focus on readability; avoid nested loops."
+              rows={3}
+              className="w-full rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2 text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 resize-y"
+            />
           </div>
           <div>
             <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
@@ -188,7 +237,7 @@ export default function MentorGeneratePage() {
             onClick={() => setStep(2)}
             className="rounded-lg border border-zinc-300 dark:border-zinc-600 px-4 py-2 font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
           >
-            Back to type & difficulty
+            Back to topics & options
           </button>
         </div>
       )}

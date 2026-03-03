@@ -218,15 +218,17 @@ export default function StudentAssignmentContent() {
           {error}
         </div>
       )}
-      {submission ? (
-        <FeedbackPanel submission={submission} />
-      ) : (
-        <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-4 bg-white dark:bg-zinc-900">
-          <h2 className="font-medium text-zinc-950 dark:text-zinc-50 mb-3">
-            Your solution
-          </h2>
-          {editorEl}
-        </div>
+      <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-4 bg-white dark:bg-zinc-900">
+        <h2 className="font-medium text-zinc-950 dark:text-zinc-50 mb-3">
+          Your solution
+        </h2>
+        {editorEl}
+      </div>
+      {submission && (
+        <FeedbackPanel
+          submission={submission}
+          onRetry={() => setSubmission(null)}
+        />
       )}
     </div>
   );
