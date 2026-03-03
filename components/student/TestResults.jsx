@@ -1,5 +1,15 @@
 "use client";
 
+function formatExpectedActual(expected, actual) {
+  const fmt = (v) => {
+    if (v == null) return "";
+    if (Array.isArray(v) && v.length > 0 && typeof v[0] === "object")
+      return `${v.length} row(s)`;
+    return String(v);
+  };
+  return `expected: ${fmt(expected)} / actual: ${fmt(actual)}`;
+}
+
 export default function TestResults({ testResults }) {
   if (!testResults) return null;
   const results = testResults.results || [];
@@ -69,8 +79,10 @@ export default function TestResults({ testResults }) {
                   </span>
                 </td>
                 <td className="px-3 py-2 text-zinc-600 dark:text-zinc-400 font-mono text-xs max-w-xs truncate">
-                  {r.expected != null && r.actual != null
-                    ? `expected: ${String(r.expected)} / actual: ${String(r.actual)}`
+                  {r.error
+                    ? r.error
+                    : r.expected != null || r.actual != null
+                    ? formatExpectedActual(r.expected, r.actual)
                     : r.message ?? "—"}
                 </td>
               </tr>

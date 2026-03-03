@@ -177,7 +177,7 @@ export default function StudentAssignmentContent() {
   }
 
   return (
-    <div className="max-w-4xl space-y-6">
+    <div className="w-full max-w-full space-y-6">
       <Link
         href="/student/assignments"
         className="text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-zinc-50"
@@ -207,6 +207,16 @@ export default function StudentAssignmentContent() {
                 <li key={i}>{r}</li>
               ))}
             </ul>
+          </>
+        )}
+        {assignment.assignment_type === "sql" && assignment.table_schema && (
+          <>
+            <h2 className="font-medium text-zinc-950 dark:text-zinc-50 mt-3">
+              Table schema
+            </h2>
+            <pre className="text-sm text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 p-3 rounded border border-zinc-200 dark:border-zinc-700 overflow-x-auto font-mono whitespace-pre">
+              {assignment.table_schema}
+            </pre>
           </>
         )}
       </div>

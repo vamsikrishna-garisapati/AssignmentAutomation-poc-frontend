@@ -13,6 +13,14 @@ const MonacoEditor = dynamic(
 const SQL_WASM_CDN =
   "https://cdn.jsdelivr.net/npm/sql.js@1.14.0/dist/sql-wasm-browser.wasm";
 
+// Fallback schema when assignment has no db_setup (e.g. customers/orders JOIN assignments)
+const DEFAULT_DB_SETUP = `
+CREATE TABLE customers (id INTEGER PRIMARY KEY, customer_name TEXT);
+CREATE TABLE orders (id INTEGER PRIMARY KEY, customer_id INTEGER, amount REAL);
+INSERT INTO customers (id, customer_name) VALUES (1, 'Alice'), (2, 'Bob'), (3, 'Carol');
+INSERT INTO orders (id, customer_id, amount) VALUES (1, 1, 50.0), (2, 1, 30.0), (3, 2, 100.0), (4, 3, 25.0);
+`;
+
 export default function SqlEditor({
   assignmentId,
   dbSetup,
@@ -39,13 +47,18 @@ export default function SqlEditor({
     })
       .then((SQL) => {
         if (cancelled) return;
-        const database = new SQL.Database();
-        const setup = (dbSetup || "").trim();
-        if (setup) {
+        let database = new SQL.Database();
+        let setup = (dbSetup || "").trim() || DEFAULT_DB_SETUP;
+        try {
+          database.run(setup);
+        } catch (e) {
+          console.warn("dbSetup error:", e);
+          database.close();
+          database = new SQL.Database();
           try {
-            database.run(setup);
-          } catch (e) {
-            console.warn("dbSetup error:", e);
+            database.run(DEFAULT_DB_SETUP);
+          } catch (e2) {
+            console.warn("default dbSetup error:", e2);
           }
         }
         setDb(database);
@@ -125,41 +138,46 @@ export default function SqlEditor({
       {runError && (
         <p className="text-sm text-red-600 dark:text-red-400">{runError}</p>
       )}
-      {runResult && runResult.length > 0 && (
-        <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-zinc-100 dark:bg-zinc-800">
-              <tr>
-                {runResult[0].columns.map((col, i) => (
-                  <th
-                    key={i}
-                    className="px-3 py-2 font-medium text-zinc-950 dark:text-zinc-50"
-                  >
-                    {col}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {runResult[0].values.map((row, ri) => (
-                <tr
-                  key={ri}
-                  className="border-t border-zinc-200 dark:border-zinc-800"
-                >
-                  {row.map((cell, ci) => (
-                    <td
-                      key={ci}
-                      className="px-3 py-2 text-zinc-900 dark:text-zinc-100"
+      {runResult && runResult.length > 0 && (() => {
+        const first = runResult[0];
+        const columns = first?.columns ?? [];
+        const values = first?.values ?? [];
+        return (
+          <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-zinc-100 dark:bg-zinc-800">
+                <tr>
+                  {columns.map((col, i) => (
+                    <th
+                      key={i}
+                      className="px-3 py-2 font-medium text-zinc-950 dark:text-zinc-50"
                     >
-                      {String(cell)}
-                    </td>
+                      {col}
+                    </th>
                   ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+              </thead>
+              <tbody>
+                {values.map((row, ri) => (
+                  <tr
+                    key={ri}
+                    className="border-t border-zinc-200 dark:border-zinc-800"
+                  >
+                    {(Array.isArray(row) ? row : []).map((cell, ci) => (
+                      <td
+                        key={ci}
+                        className="px-3 py-2 text-zinc-900 dark:text-zinc-100"
+                      >
+                        {String(cell)}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+      })()}
     </div>
   );
 }
